@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Welcome to Firebase Hosting</title>
+
+  <!-- update the version number as needed -->
+  <script defer src="/__/firebase/7.9.1/firebase-app.js"></script>
+  <!-- include only the Firebase features as you need -->
+  <script defer src="/__/firebase/7.9.1/firebase-auth.js"></script>
+  <script defer src="/__/firebase/7.9.1/firebase-database.js"></script>
+  <script defer src="/__/firebase/7.9.1/firebase-messaging.js"></script>
+  <script defer src="/__/firebase/7.9.1/firebase-storage.js"></script>
+  <script defer src="/__/firebase/7.9.1/firebase-firestore.js"></script>
+  <!-- initialize the SDK after all desired features are loaded -->
+  <script defer src="/__/firebase/init.js"></script>
+</head>
+
+<body>
+  <input id="name" />
+  <button id="add-btn">Add</button>
+  <h1>Users</h1>
+  <ul id="list-users"></ul>
+
+  <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+      var db = firebase.firestore();
+      let users = [];
+      const addButton = document.getElementById('add-btn');
+      addButton.addEventListener('click', createUser);
+
+      function createUser() {
+        const nameInput = document.getElementById('name');
+        const name = nameInput.value;
+        if (!name) {
+          return;
+        }
+
+        axios.post('http://localhost:3000/users/', { name }).then(res => {
+          users = users.concat(res.data);
+          render(users);
+          nameInput.value = '';
+        });
+      }
+
+      function listUser() {
+        db.collection('users').get().then(snapshot => {
+          users = snapshot.docs.map(user => {
+            return {
+              ...user.data(),
+              id: user.id,
+            };
+          });
+          render(users);
+        });
+      }
+
+      function deleteUser(event) {
+        const thisButton = event.target;
+        const id = thisButton.getAttribute('data-id');
+        axios.delete(`http://localhost:3000/users/${id}`).then(res => {
+          users = users.filter(user => user.id !== parseInt(id));
+          render(users);
+        });
+      }
+
+      function updateUser() {
+        const thisButton = event.target;
+        const id = thisButton.getAttribute('data-id');
+        const inputUpdate = document.getElementById(`name-${id}`);
+        const newName = inputUpdate.value;
+        if (!newName) {
+          return;
+        }
+
+        axios.put(`http://localhost:3000/users/${id}`, { name: newName }).then(res => {
+          alert('Update successfully!');
+        });
+      }
+
+      function render(users) {
+        const arrUsers = users.map(user => {
+          return `
+          <li>
+              ${user.id}<input id="name-${user.id}" value="${user.name}"/>
+              <button data-id="${user.id}" class="del-btn">Delete</button>        
+              <button data-id="${user.id}" class="update-btn">Update</button>        
+          </li>
+        `;
+        });
+
+        const listUserEle = document.getElementById('list-users');
+
+        listUserEle.innerHTML = arrUsers.join('');
+
+        const delButtons = document.getElementsByClassName('del-btn');
+        Array.from(delButtons).forEach(btn => {
+          btn.addEventListener('click', deleteUser);
+        });
+
+        const updateButtons = document.getElementsByClassName('update-btn');
+        Array.from(updateButtons).forEach(btn => {
+          btn.addEventListener('click', updateUser);
+        });
+      }
+
+      listUser();
+    })
+  </script>
+</body>
+
+</html>
