@@ -38,8 +38,17 @@
           return;
         }
 
-        axios.post('http://localhost:3000/users/', { name }).then(res => {
-          users = users.concat(res.data);
+        db.collection('users').add({
+          name,
+        }).then(docRef => {
+          return docRef.get();
+        }).then(doc => {
+          const user = {
+            ...doc.data(),
+            id: doc.id,
+          };
+
+          users = users.concat(user);
           render(users);
           nameInput.value = '';
         });
